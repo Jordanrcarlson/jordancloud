@@ -5,19 +5,7 @@ import { MediaGrid } from '../components/MediaGrid';
 import { UploadButton } from '../components/UploadButton';
 import { uploadMedia } from '../lib/upload';
 import { supabase } from '../lib/supabase';
-
-interface MediaItem {
-  id: string;
-  url: string;
-  type: 'image' | 'video';
-  created_at: string;
-}
-
-interface Album {
-  id: string;
-  name: string;
-  description: string;
-}
+import { MediaItem, AlbumItem, Album } from '../types';
 
 export function AlbumView() {
   const { id } = useParams();
@@ -64,7 +52,7 @@ export function AlbumView() {
 
       if (itemsError) throw itemsError;
 
-      const mediaItems = items
+      const mediaItems = (items as unknown as AlbumItem[])
         .map(item => item.media)
         .filter((item): item is MediaItem => item !== null);
 

@@ -4,12 +4,14 @@ import { MediaGrid } from '../components/MediaGrid';
 import { UploadButton } from '../components/UploadButton';
 import { uploadMedia } from '../lib/upload';
 import { supabase } from '../lib/supabase';
+import { getImages } from '../files';
 
 interface MediaItem {
   id: string;
   url: string;
   type: 'image' | 'video';
   created_at: string;
+  source?: 'supabase' | 'local';
 }
 
 export function Home() {
@@ -24,7 +26,10 @@ export function Home() {
 
   const loadMediaItems = async () => {
     try {
-      const { data: files, error } = await supabase
+      setIsLoading(true);
+      
+      // Load from Supabase
+      const { data: supabaseFiles, error } = await supabase
         .from('media')
         .select('*')
         .eq('folder', 'public')
@@ -32,7 +37,22 @@ export function Home() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMediaItems(files);
+
+      // Load local images
+      const localImagePaths = await getImages();
+      const localImages: MediaItem[] = localImagePaths.map((path, index) => ({
+        id: `local-${index}`,
+        url: path,
+        type: 'image',
+        created_at: new Date().toISOString(), // or you could read file metadata
+        source: 'local'
+      }));
+
+      // Combine both sources
+      setMediaItems([
+        ...supabaseFiles,
+        ...localImages
+      ]);
     } catch (error) {
       console.error('Error loading media:', error);
       alert('Failed to load media items');

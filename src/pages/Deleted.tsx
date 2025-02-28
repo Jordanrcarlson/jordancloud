@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { MediaGrid } from '../components/MediaGrid';
 import { supabase } from '../lib/supabase';
-
-interface MediaItem {
-  id: string;
-  url: string;
-  type: 'image' | 'video';
-  created_at: string;
-  deleted_at: string;
-}
+import { MediaItem } from '../types';
 
 export function Deleted() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -51,6 +44,10 @@ export function Deleted() {
     }
   };
 
+  const handleSelect = (item: MediaItem) => {
+    setSelectedItem(item);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -71,7 +68,7 @@ export function Deleted() {
 
       <MediaGrid
         items={mediaItems}
-        onSelect={setSelectedItem}
+        onSelect={handleSelect}
         showRestore
         onRestore={handleRestore}
       />

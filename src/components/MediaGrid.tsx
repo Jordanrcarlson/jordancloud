@@ -1,18 +1,13 @@
-import React from 'react';
 import Masonry from 'react-masonry-css';
 import { Play } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface MediaItem {
-  id: string;
-  url: string;
-  type: 'image' | 'video';
-  created_at: string;
-}
+import { MediaItem } from '../types';
 
 interface MediaGridProps {
   items: MediaItem[];
   onSelect: (item: MediaItem) => void;
+  showRestore?: boolean;
+  onRestore?: (id: string) => void;
 }
 
 export function MediaGrid({ items, onSelect }: MediaGridProps) {

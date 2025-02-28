@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { AlbumGrid } from '../components/AlbumGrid';
@@ -57,7 +57,7 @@ export function Albums() {
         </button>
       </div>
 
-      <AlbumGrid albums={albums} onRefresh={loadAlbums} />
+      <AlbumGrid albums={albums} />
 
       {isCreateModalOpen && (
         <CreateAlbumModal

@@ -10,38 +10,53 @@ export async function uploadMedia(file: File, folder: 'public' | 'personal') {
   // Generate unique filename
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const filePath = `${folder}/${fileName}`;
+  const filePath = `${folder}/images/${fileName}`;
 
   try {
-    // Upload file to storage
-    const { error: uploadError } = await supabase.storage
-      .from('media')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+    // Create a FormData object
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', filePath);
+    formData.append('folder', folder);
 
-    if (uploadError) throw uploadError;
+    console.log('Uploading file:', file.name); // Debug log
+    console.log('To folder:', folder); // Debug log
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('media')
-      .getPublicUrl(filePath);
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error('Upload response:', response.status, errorData); // Debug log
+      throw new Error(`Upload failed: ${errorData?.error || response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Upload successful:', responseData); // Debug log
 
     // Insert into media table
     const { error: dbError } = await supabase
       .from('media')
       .insert([{
-        url: publicUrl,
+        url: filePath,
         type: file.type.startsWith('image/') ? 'image' : 'video',
-        folder
+        folder: folder
       }]);
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('Database error:', dbError); // Debug log
+      throw dbError;
+    }
 
-    return publicUrl;
-  } catch (error) {
+    return filePath;
+  } catch (error: unknown) {
     console.error('Upload error:', error);
-    throw new Error('Failed to upload file. Please try again.');
+    if (error instanceof Error) {
+      throw new Error(`Failed to upload file: ${error.message}`);
+    } else {
+      throw new Error('Failed to upload file: Unknown error');
+    }
   }
 }

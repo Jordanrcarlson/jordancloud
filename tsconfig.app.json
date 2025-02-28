@@ -11,14 +11,19 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
+    "composite": true,
+    "outDir": "./dist/app",
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationMap": true,
 
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    "jsx": "react-jsx"
   },
   "include": ["src"]
 }

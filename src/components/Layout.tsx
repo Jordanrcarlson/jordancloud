@@ -1,4 +1,3 @@
-import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Cloud, FolderLock, LogOut, Album, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Image } from 'lucide-react';
 
@@ -11,10 +10,9 @@ interface Album {
 
 interface AlbumGridProps {
   albums: Album[];
-  onRefresh: () => void;
 }
 
-export function AlbumGrid({ albums, onRefresh }: AlbumGridProps) {
+export function AlbumGrid({ albums }: AlbumGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {albums.map((album) => (
