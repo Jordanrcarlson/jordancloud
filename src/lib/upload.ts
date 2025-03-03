@@ -1,62 +1,67 @@
 import { supabase } from './supabase';
 
 export async function uploadMedia(file: File, folder: 'public' | 'personal') {
-  // Validate file size (10MB limit)
-  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-  if (file.size > MAX_SIZE) {
-    throw new Error('File size must be less than 10MB');
-  }
-
-  // Generate unique filename
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const filePath = `${folder}/images/${fileName}`;
-
   try {
-    // Create a FormData object
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('path', filePath);
-    formData.append('folder', folder);
-
-    console.log('Uploading file:', file.name); // Debug log
-    console.log('To folder:', folder); // Debug log
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error('Upload response:', response.status, errorData); // Debug log
-      throw new Error(`Upload failed: ${errorData?.error || response.statusText}`);
+    if (!file.name.trim()) {
+      throw new Error('Invalid filename');
     }
 
-    const responseData = await response.json();
-    console.log('Upload successful:', responseData); // Debug log
+    // Validate file size
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      throw new Error('File size must be less than 10MB');
+    }
+
+    console.log('Uploading file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    console.log('Attempting to connect to server...');
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      }
+    }).catch(error => {
+      console.error('Network error:', error);
+      throw new Error('Server is not running or unreachable');
+    });
+
+    const data = await response.json();
+    console.log('Upload response:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Upload failed');
+    }
 
     // Insert into media table
     const { error: dbError } = await supabase
       .from('media')
       .insert([{
-        url: filePath,
-        type: file.type.startsWith('image/') ? 'image' : 'video',
+        url: data.path,
+        type: data.type,
         folder: folder
       }]);
 
     if (dbError) {
-      console.error('Database error:', dbError); // Debug log
+      console.error('Database error:', dbError);
       throw dbError;
     }
 
-    return filePath;
-  } catch (error: unknown) {
+    return data.path;
+  } catch (error) {
     console.error('Upload error:', error);
     if (error instanceof Error) {
-      throw new Error(`Failed to upload file: ${error.message}`);
-    } else {
-      throw new Error('Failed to upload file: Unknown error');
+      throw new Error(`Upload failed: ${error.message}`);
     }
+    throw new Error('Upload failed: Unknown error');
   }
 }

@@ -19,14 +19,11 @@ export function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
-  useEffect(() => {
-    loadMediaItems();
-  }, []);
-
-  const loadMediaItems = async () => {
+  const loadMediaItems = async (isPolling = false) => {
     try {
-      setIsLoading(true);
+      if (!isPolling) setIsLoading(true);
       
       // Load from Supabase
       const { data: supabaseFiles, error } = await supabase
@@ -40,26 +37,39 @@ export function Home() {
 
       // Load local images
       const localImagePaths = await getImages();
-      const localImages: MediaItem[] = localImagePaths.map((path, index) => ({
+      const localImages = localImagePaths.map((path, index) => ({
         id: `local-${index}`,
         url: path,
         type: 'image',
-        created_at: new Date().toISOString(), // or you could read file metadata
+        created_at: new Date().toISOString(),
         source: 'local'
       }));
 
-      // Combine both sources
-      setMediaItems([
-        ...supabaseFiles,
-        ...localImages
-      ]);
+      // Only update if there are changes
+      const newItems = [...supabaseFiles, ...localImages];
+      const hasChanges = JSON.stringify(newItems) !== JSON.stringify(mediaItems);
+      
+      if (hasChanges) {
+        setMediaItems(newItems);
+      }
     } catch (error) {
       console.error('Error loading media:', error);
-      alert('Failed to load media items');
+      if (!isPolling) alert('Failed to load media items');
     } finally {
-      setIsLoading(false);
+      if (!isPolling) setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadMediaItems();
+
+    // Set up polling
+    const interval = setInterval(() => {
+      loadMediaItems(true);  // Pass true for polling
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -79,6 +89,37 @@ export function Home() {
       setIsUploading(false);
       // Reset the input
       event.target.value = '';
+    }
+  };
+
+  const handleDelete = async (mediaItem: MediaItem) => {
+    try {
+      // Extract filename from the URL
+      const filename = mediaItem.url.split('/').pop();
+      if (!filename) throw new Error('Invalid file path');
+
+      // Delete the file
+      const response = await fetch(`/api/delete/${filename}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('media')
+        .delete()
+        .eq('id', mediaItem.id);
+
+      if (error) throw error;
+
+      // Refresh the media list
+      await loadMediaItems();
+    } catch (error) {
+      console.error('Error deleting:', error);
+      alert('Failed to delete item');
     }
   };
 

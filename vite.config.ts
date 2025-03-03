@@ -1,26 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import express from 'express';
-import { router as uploadRouter } from './src/api/upload';
-import type { Connect, ViteDevServer } from 'vite';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
-  build: {
-    outDir: 'build'
-  },
   server: {
-    host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api': {
+      '/api': 'http://localhost:3000',
+      '^/images/.*': {  // More specific pattern
         target: 'http://localhost:3000',
         changeOrigin: true
       }
     }
-  }
+  },
+  publicDir: false  // Disable Vite's static file handling
 });
